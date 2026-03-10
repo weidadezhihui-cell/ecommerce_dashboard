@@ -205,6 +205,59 @@ def load_data(uploaded_file: Optional[object]) -> Optional[pd.DataFrame]:
         raise ValueError(f"Error loading file: {str(e)}")
 
 
+# ----------------------------
+# Money parsing helpers
+# ----------------------------
+def to_money(series: pd.Series) -> pd.Series:
+    """
+    Robustly parse money-like strings into numeric values.
+    Handles commas, currency symbols, and parentheses for negatives.
+    """
+    if series is None:
+        return pd.Series(dtype="float64")
+    s = series.astype(str)
+    s = s.str.replace(r"[\s,]", "", regex=True)
+    s = s.str.replace(r"[\$£€¥]", "", regex=True)
+    s = s.str.replace(r"^\((.*)\)$", r"-\1", regex=True)
+    return pd.to_numeric(s, errors="coerce").fillna(0.0)
+
+
+def apply_money_parsing(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply money parsing to known monetary columns if present.
+    """
+    money_cols = [
+        "total",
+        "product_sales",
+        "product_sales_tax",
+        "shipping_credits",
+        "shipping_credits_tax",
+        "gift_wrap_credits",
+        "giftwrap_credits_tax",
+        "selling_fees",
+        "fba_fees",
+        "other_transaction_fees",
+        "other",
+        "regulatory_fee",
+        "tax_on_regulatory_fee",
+        "promotional_rebates",
+        "promotional_rebates_tax",
+        "marketplace_withheld_tax",
+        "service_fee",
+        "gross_sales",
+        "net_proceeds",
+        "revenue",
+        "cogs",
+        "ad_cost",
+        "fees",
+    ]
+    df_parsed = df.copy()
+    for col in money_cols:
+        if col in df_parsed.columns:
+            df_parsed[col] = to_money(df_parsed[col])
+    return df_parsed
+
+
 # Amazon settlement canonicals: keep originals, add canonical copies (do not rename)
 _AMAZON_CANONICAL_KEYS = {
     'date_time', 'txn_type', 'product_sales', 'selling_fees', 'fba_fees',
@@ -292,7 +345,7 @@ def compute_metrics(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     numeric_cols = ['revenue', 'cogs', 'ad_cost', 'fees']
     for col in numeric_cols:
         if col in df_metrics.columns:
-            df_metrics[col] = pd.to_numeric(df_metrics[col], errors='coerce').fillna(0)
+            df_metrics[col] = to_money(df_metrics[col])
         else:
             df_metrics[col] = 0
     
