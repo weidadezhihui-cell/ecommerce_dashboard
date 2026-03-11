@@ -192,7 +192,7 @@ def _half_gauge(
             yanchor="bottom",
             xanchor="center",
             showarrow=False,
-            font=dict(size=38, color=TEAL_HEADER, family="Inter"),
+            font=dict(size=48, color=TEAL_HEADER, family="Source Sans 3"),
             align="center",
         ),
         dict(
@@ -204,7 +204,7 @@ def _half_gauge(
             yanchor="top",
             xanchor="center",
             showarrow=False,
-            font=dict(size=27, color=label_color, family="Inter"),
+            font=dict(size=34, color=label_color, family="Source Sans 3"),
             align="center",
         ),
         dict(
@@ -216,7 +216,7 @@ def _half_gauge(
             yanchor="top",
             xanchor="right",
             showarrow=False,
-            font=dict(size=27, color=label_color, family="Inter"),
+            font=dict(size=34, color=label_color, family="Source Sans 3"),
             align="right",
         ),
     ]
@@ -341,20 +341,104 @@ st.set_page_config(page_title="Target Progress", layout="wide")
 
 st.markdown("""
     <style>
-    .target-title { font-size: 2.75rem !important; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem; }
-    .target-intro { font-size: 1.5rem !important; color: #374151; margin-bottom: 0.5rem; }
-    /* Card containers: subtle border and 1px shadow to match KPI page */
-    div[data-testid="stHorizontalBlock"] > div {
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        padding: 0;
-        background-color: #ffffff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-        margin-bottom: 20px;
-        min-height: 600px;
-        overflow: hidden;
+    /* Single font for all text and numbers (match Target Progress title) */
+    :root { --target-font: "Source Sans 3", "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .target-title, .target-intro,
+    .target-title *, .target-intro *,
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header),
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) *,
+    .summary-text, .summary-text *,
+    .target-card-header, .target-card-header *,
+    .target-footer-wrap, .target-footer-wrap *,
+    .target-settings-section, .target-settings-section * {
+        font-family: var(--target-font) !important;
+        font-variant-numeric: normal !important;
     }
-    /* Target Settings card: no border or box outline */
+    .target-title { font-size: 2.75rem !important; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem; }
+    .target-intro { font-size: 1.75rem !important; color: #374151; margin-bottom: 2.5rem; }
+    /* Premium card: two vertical columns, each one styled container */
+    .target-progress-card {
+        border: 1px solid #e6e9ef;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        background: #ffffff;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    /* Wider space between the two goal cards */
+    div[data-testid="stHorizontalBlock"]:has(> div:has(.target-card-header)) {
+        gap: 8rem !important;
+    }
+    /* Card look: column that contains the teal card header */
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) {
+        border: 1px solid #e6e9ef !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08) !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) > div {
+        background: #ffffff !important;
+    }
+    /* Input area: goal input – match KPI "Select Year" style (light grey, bordered) */
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) > [data-testid="stTextInput"] {
+        background-color: transparent !important;
+        padding: 1rem 1.25rem 2.5rem 1.25rem !important;
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) > [data-testid="stTextInput"] > div {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) [data-testid="stTextInput"] {
+        border: none !important;
+    }
+    /* Much more space between filter and teal title section */
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) > [data-testid="stMarkdown"]:has(.target-card-header) {
+        margin: 0 !important;
+        padding: 0 !important;
+        margin-top: 3.5rem !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) .target-card-header {
+        margin: 0 !important;
+    }
+    /* Goal input label – match KPI Select Year: dark grey, slightly larger */
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) [data-testid="stTextInput"] label,
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) [data-testid="stTextInput"] label p {
+        font-size: 1.7rem !important;
+        font-weight: 400 !important;
+        color: #31333f !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) [data-testid="stTextInput"] input {
+        font-size: 2.2rem !important;
+        font-family: var(--target-font) !important;
+        font-variant-numeric: normal !important;
+        height: 4.25rem !important;
+        line-height: 1.2 !important;
+        padding: 0.5rem 0.75rem !important;
+        background-color: #f0f2f6 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        text-align: left !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+    /* Main input container – same as KPI Select Year: light grey, thin border, 8px radius */
+    div[data-testid="stHorizontalBlock"] > div:has(.target-card-header) [data-testid="stTextInput"] > div {
+        background-color: #f0f2f6 !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 8px !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        min-height: 4.25rem !important;
+        overflow: visible !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0.35rem !important;
+    }
+    /* Target Settings section (legacy: when inputs were separate) */
     .target-settings-section {
         border: none !important;
         border-radius: 0;
@@ -407,6 +491,8 @@ st.markdown("""
     .target-settings-section [data-testid="stTextInput"] input,
     div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stTextInput"] input {
         font-size: 2.2rem !important;
+        font-family: var(--target-font) !important;
+        font-variant-numeric: normal !important;
         font-weight: 400 !important;
         height: 5.5rem !important;
         line-height: 5.5rem !important;
@@ -463,53 +549,53 @@ st.markdown("""
         border: none !important;
         box-shadow: none !important;
     }
+    /* Header: match KPI page – dark teal, bold white; zero gap so it touches card edges */
     .target-card-header {
-        background: #137D78;
+        background: #0f766e;
         color: #fff;
-        padding: 1.35rem 1.5rem;
+        padding: 1rem 1.25rem;
         text-align: center;
-        border-radius: 12px 12px 0 0;
-        margin: 0;
-        font-size: 2.85rem !important;
+        border-radius: 0;
+        margin: 0 !important;
+        font-size: 42px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
     .target-card-header .target-card-subtitle {
-        display: block;
-        font-size: 1.8rem;
+        display: inline-block;
+        font-size: 32px;
         font-weight: 700;
-        margin-top: 0.45rem;
+        margin-top: 6px;
+        margin-bottom: 0;
+        padding-bottom: 6px;
+        border-bottom: 4px solid rgba(255, 255, 255, 0.9);
         opacity: 0.95;
         text-transform: none;
         letter-spacing: normal;
     }
-    /* Outer border around each KPI card (Sales / Net Profit) for readability */
-    div[data-testid="stHorizontalBlock"]:has(.target-card-header) > div {
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        padding: 0 0 1rem 0;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        background: #fff;
-    }
-    div[data-testid="stHorizontalBlock"] > div [data-testid="stPlotlyChart"] { margin-top: -6px; margin-bottom: -8px; padding: 0 1rem; }
+    div[data-testid="stHorizontalBlock"] > div [data-testid="stPlotlyChart"] { margin-top: -6px; margin-bottom: -8px; padding: 0 1rem; text-align: center; }
     div[data-testid="stHorizontalBlock"] > div [data-testid="stPlotlyChart"]:first-of-type { margin-top: -8px; margin-bottom: -8px; }
     .summary-text {
         text-align: center;
-        font-size: 1.75rem !important;
+        font-size: 2rem !important;
         font-weight: 400;
         color: #374151;
         margin-top: 1.25rem;
         padding: 0 1rem 0.75rem 1rem;
     }
-    .forecast-separator { border-top: 1px solid #e5e7eb; margin: 0.75rem 1rem 0.5rem 1rem; width: auto; }
-    .target-footer-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; font-size: 1.65rem; color: #374151; }
-    .target-footer-row .target-footer-icon { opacity: 0.8; font-size: 1.65rem; }
-    .target-footer-row .target-footer-label { font-weight: 600; min-width: 10rem; font-size: 1.65rem; }
-    .target-footer-row .target-footer-value { font-weight: 700; color: #1f2937; font-size: 1.65rem; }
-    .target-footer-status-done { color: #0f766e; font-weight: 700; font-size: 1.65rem; }
-    .target-footer-status-icon-done { color: #16a34a; font-size: 1.65rem; }
-    .target-footer-wrap { padding-bottom: 1rem; }
+    .forecast-separator { border: none; margin: 0; padding: 0; height: 0; }
+    .target-footer-wrap {
+        border-top: 1px solid #e6e9ef;
+        padding: 1rem 1.25rem 1.25rem;
+        background: #fafbfc;
+    }
+    .target-footer-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; font-size: 1.6rem; color: #374151; }
+    .target-footer-row .target-footer-icon { opacity: 0.85; font-size: 1.6rem; }
+    .target-footer-row .target-footer-label { font-weight: 700 !important; min-width: 10rem; font-size: 1.6rem; }
+    .target-footer-row .target-footer-value { font-weight: 700; color: #1f2937; font-size: 1.6rem; }
+    .target-footer-status-done { color: #0f766e; font-weight: 700; font-size: 1.6rem; }
+    .target-footer-status-icon-done { color: #16a34a; font-size: 1.6rem; }
     /* Hide 'Press Enter to apply' everywhere so readers don't see it */
     div[data-testid="InputInstructions"],
     div[data-testid="stInputInstructions"],
@@ -529,9 +615,7 @@ st.markdown("""
 
 st.markdown("<h1 class='target-title'>Target Progress</h1>", unsafe_allow_html=True)
 st.markdown(
-    "<p class='target-intro'>This page tracks your performance against annual goals. "
-    "Enter your annual targets for Total Sales and Net Profit in <strong>Target Settings</strong> below "
-    "(current year = most recent year in your data) to monitor progress.</p>",
+    "<p class='target-intro'>Track performance against your annual goals. Set your targets below to monitor progress for the current year.</p>",
     unsafe_allow_html=True,
 )
 
@@ -584,14 +668,12 @@ sales_goal = float(st.session_state.target_annual_sales_goal)
 profit_goal = float(st.session_state.target_annual_net_profit_goal)
 year_days = 365
 
-# --------------- Goal inputs: side-by-side ---------------
-with st.container():
-    st.markdown(
-        '<div class="target-settings-section">',
-        unsafe_allow_html=True,
-    )
-    col1, col2 = st.columns(2)
-    with col1:
+# --------------- Two cards: Sales (col1) and Net Profit (col2) ---------------
+ytd_label = f"Year to Date ({date_str})"
+col1, col2 = st.columns(2)
+
+with col1:
+    with st.container():
         st.text_input(
             "Annual Sales Goal ($)",
             value=st.session_state.tp_sales_goal_text,
@@ -599,7 +681,34 @@ with st.container():
             on_change=_on_sales_text_change,
             placeholder="e.g. 10,000,000",
         )
-    with col2:
+        st.markdown(
+            f'<div class="target-card-header">TOTAL SALES<br><span class="target-card-subtitle">{ytd_label}</span></div>',
+            unsafe_allow_html=True,
+        )
+        fig1, cfg1 = _half_gauge(
+            ytd_sales, sales_goal, f"${ytd_sales:,.0f}", f"${sales_goal:,.0f}",
+            progress_color=TEAL_KPI,
+        )
+        st.plotly_chart(fig1, use_container_width=True, key="tp_sales", config=cfg1)
+        st.markdown(_render_summary(ytd_sales, sales_goal, f"${ytd_sales:,.0f}", "sales"), unsafe_allow_html=True)
+        st.markdown('<hr class="forecast-separator" />', unsafe_allow_html=True)
+        proj_sales = (ytd_sales / days_passed) * year_days if days_passed else 0
+        req_sales_per_day = (sales_goal - ytd_sales) / max(days_remaining, 1) if (days_remaining and ytd_sales < sales_goal) else 0
+        sales_status = "Goal reached" if ytd_sales >= sales_goal else "In progress"
+        sales_status_icon = '<span class="target-footer-status-icon-done">✔</span>' if ytd_sales >= sales_goal else "—"
+        sales_req_display = f"${req_sales_per_day:,.0f}/day" if ytd_sales < sales_goal else "–"
+        sales_status_html = f'<span class="target-footer-status-done">{sales_status}</span>' if ytd_sales >= sales_goal else f'<span>{sales_status}</span>'
+        st.markdown(
+            f'<div class="target-footer-wrap">'
+            f'<div class="target-footer-row"><span class="target-footer-icon">📋</span><span class="target-footer-label">On track for:</span> <span class="target-footer-value">${proj_sales:,.0f}</span> by {dec_str}</div>'
+            f'<div class="target-footer-row"><span class="target-footer-icon">📅</span><span class="target-footer-label">Required per day:</span> <span>{sales_req_display}</span></div>'
+            f'<div class="target-footer-row"><span class="target-footer-icon">{sales_status_icon}</span><span class="target-footer-label">Status:</span> {sales_status_html}</div>'
+            f'</div>',
+        unsafe_allow_html=True,
+        )
+
+with col2:
+    with st.container():
         st.text_input(
             "Annual Net Profit Goal ($)",
             value=st.session_state.tp_profit_goal_text,
@@ -607,63 +716,28 @@ with st.container():
             on_change=_on_profit_text_change,
             placeholder="e.g. 20,000",
         )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# --------------- 2 columns: Col1=Sales, Col2=Net Profit ---------------
-col1, col2 = st.columns(2)
-
-ytd_label = f"Year to Date ({date_str})"
-
-with col1:
-    st.markdown(
-        f'<div class="target-card-header">TOTAL SALES<br><span class="target-card-subtitle">{ytd_label}</span></div>',
+        st.markdown(
+            f'<div class="target-card-header">TOTAL NET PROFIT<br><span class="target-card-subtitle">{ytd_label}</span></div>',
+            unsafe_allow_html=True,
+        )
+        fig2, cfg2 = _half_gauge(
+            ytd_net_profit, profit_goal, f"${ytd_net_profit:,.0f}", f"${profit_goal:,.0f}",
+            progress_color=TEAL_KPI,
+        )
+        st.plotly_chart(fig2, use_container_width=True, key="tp_profit", config=cfg2)
+        st.markdown(_render_summary(ytd_net_profit, profit_goal, f"${ytd_net_profit:,.0f}", "net profit"), unsafe_allow_html=True)
+        st.markdown('<hr class="forecast-separator" />', unsafe_allow_html=True)
+        proj_profit = (ytd_net_profit / days_passed) * year_days if days_passed else 0
+        req_profit_per_day = (profit_goal - ytd_net_profit) / max(days_remaining, 1) if (days_remaining and ytd_net_profit < profit_goal) else 0
+        profit_status = "Goal reached" if ytd_net_profit >= profit_goal else "In progress"
+        profit_status_icon = '<span class="target-footer-status-icon-done">✔</span>' if ytd_net_profit >= profit_goal else "—"
+        profit_req_display = f"${req_profit_per_day:,.0f}/day" if ytd_net_profit < profit_goal else "–"
+        profit_status_html = f'<span class="target-footer-status-done">{profit_status}</span>' if ytd_net_profit >= profit_goal else f'<span>{profit_status}</span>'
+        st.markdown(
+            f'<div class="target-footer-wrap">'
+            f'<div class="target-footer-row"><span class="target-footer-icon">📋</span><span class="target-footer-label">On track for:</span> <span class="target-footer-value">${proj_profit:,.0f}</span> by {dec_str}</div>'
+            f'<div class="target-footer-row"><span class="target-footer-icon">📅</span><span class="target-footer-label">Required per day:</span> <span>{profit_req_display}</span></div>'
+            f'<div class="target-footer-row"><span class="target-footer-icon">{profit_status_icon}</span><span class="target-footer-label">Status:</span> {profit_status_html}</div>'
+            f'</div>',
         unsafe_allow_html=True,
-    )
-    fig1, cfg1 = _half_gauge(
-        ytd_sales, sales_goal, f"${ytd_sales:,.0f}", f"${sales_goal:,.0f}",
-        progress_color=TEAL_KPI,
-    )
-    st.plotly_chart(fig1, use_container_width=True, key="tp_sales", config=cfg1)
-    st.markdown(_render_summary(ytd_sales, sales_goal, f"${ytd_sales:,.0f}", "sales"), unsafe_allow_html=True)
-    st.markdown('<hr class="forecast-separator" />', unsafe_allow_html=True)
-    proj_sales = (ytd_sales / days_passed) * year_days if days_passed else 0
-    req_sales_per_day = (sales_goal - ytd_sales) / max(days_remaining, 1) if (days_remaining and ytd_sales < sales_goal) else 0
-    sales_status = "Goal reached" if ytd_sales >= sales_goal else "In progress"
-    sales_status_icon = '<span class="target-footer-status-icon-done">✔</span>' if ytd_sales >= sales_goal else "—"
-    sales_req_display = f"${req_sales_per_day:,.0f}/day" if ytd_sales < sales_goal else "–"
-    sales_status_html = f'<span class="target-footer-status-done">{sales_status}</span>' if ytd_sales >= sales_goal else f'<span>{sales_status}</span>'
-    st.markdown(
-        f'<div class="target-footer-wrap">'
-        f'<div class="target-footer-row"><span class="target-footer-icon">📋</span><span class="target-footer-label">On track for:</span> <span class="target-footer-value">${proj_sales:,.0f}</span> by {dec_str}</div>'
-        f'<div class="target-footer-row"><span class="target-footer-icon">📅</span><span class="target-footer-label">Required per day:</span> <span>{sales_req_display}</span></div>'
-        f'<div class="target-footer-row"><span class="target-footer-icon">{sales_status_icon}</span><span class="target-footer-label">Status:</span> {sales_status_html}</div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
-
-with col2:
-    st.markdown(
-        f'<div class="target-card-header">TOTAL NET PROFIT<br><span class="target-card-subtitle">{ytd_label}</span></div>',
-        unsafe_allow_html=True,
-    )
-    fig2, cfg2 = _half_gauge(
-        ytd_net_profit, profit_goal, f"${ytd_net_profit:,.0f}", f"${profit_goal:,.0f}",
-        progress_color=TEAL_KPI,
-    )
-    st.plotly_chart(fig2, use_container_width=True, key="tp_profit", config=cfg2)
-    st.markdown(_render_summary(ytd_net_profit, profit_goal, f"${ytd_net_profit:,.0f}", "net profit"), unsafe_allow_html=True)
-    st.markdown('<hr class="forecast-separator" />', unsafe_allow_html=True)
-    proj_profit = (ytd_net_profit / days_passed) * year_days if days_passed else 0
-    req_profit_per_day = (profit_goal - ytd_net_profit) / max(days_remaining, 1) if (days_remaining and ytd_net_profit < profit_goal) else 0
-    profit_status = "Goal reached" if ytd_net_profit >= profit_goal else "In progress"
-    profit_status_icon = '<span class="target-footer-status-icon-done">✔</span>' if ytd_net_profit >= profit_goal else "—"
-    profit_req_display = f"${req_profit_per_day:,.0f}/day" if ytd_net_profit < profit_goal else "–"
-    profit_status_html = f'<span class="target-footer-status-done">{profit_status}</span>' if ytd_net_profit >= profit_goal else f'<span>{profit_status}</span>'
-    st.markdown(
-        f'<div class="target-footer-wrap">'
-        f'<div class="target-footer-row"><span class="target-footer-icon">📋</span><span class="target-footer-label">On track for:</span> <span class="target-footer-value">${proj_profit:,.0f}</span> by {dec_str}</div>'
-        f'<div class="target-footer-row"><span class="target-footer-icon">📅</span><span class="target-footer-label">Required per day:</span> <span>{profit_req_display}</span></div>'
-        f'<div class="target-footer-row"><span class="target-footer-icon">{profit_status_icon}</span><span class="target-footer-label">Status:</span> {profit_status_html}</div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        )
