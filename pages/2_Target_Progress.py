@@ -358,17 +358,21 @@ st.markdown("""
     .target-settings-section {
         border: none !important;
         border-radius: 0;
-        padding: 1rem 1.25rem 1rem 1.25rem;
+        padding: 0.85rem 0.6rem 0.85rem 0.6rem;
         margin-bottom: 1rem;
         margin-top: 0.25rem;
         background-color: #ffffff;
         box-shadow: none !important;
     }
     /* Columns and inputs inside Target Settings (also target same vertical block if DOM nests differently) */
+    .target-settings-section [data-testid="stHorizontalBlock"],
+    div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stHorizontalBlock"] {
+        gap: 0.5rem !important;
+    }
     .target-settings-section [data-testid="stHorizontalBlock"] > div,
     div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stHorizontalBlock"] > div {
         min-height: 0 !important;
-        padding: 0 8px 5px 8px !important;
+        padding: 0 4px 5px 4px !important;
         margin-bottom: 0 !important;
         border: none !important;
         box-shadow: none !important;
@@ -379,22 +383,46 @@ st.markdown("""
     div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stTextInput"] label p {
         font-size: 1.9rem !important;
         font-weight: 400 !important;
-        color: #1a1a1a !important;
+        color: #6b7280 !important;
+    }
+    /* Hide "Press Enter to apply" – hide completely or make blank */
+    .target-settings-section [data-testid="stInputInstructions"],
+    div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stInputInstructions"],
+    .target-settings-section [data-testid="stTextInput"] [data-testid="stInputInstructions"],
+    div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stTextInput"] [data-testid="stInputInstructions"],
+    .target-settings-section [data-testid="stTextInput"] small,
+    div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stTextInput"] small {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        color: transparent !important;
+        position: absolute !important;
+        left: -9999px !important;
+        pointer-events: none !important;
     }
     .target-settings-section [data-testid="stTextInput"] input,
     div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stTextInput"] input {
-        font-size: 2rem !important;
+        font-size: 2.2rem !important;
         font-weight: 400 !important;
-        height: 3rem !important;
-        line-height: 3rem !important;
-        padding: 0 1rem !important;
+        height: 5.5rem !important;
+        line-height: 5.5rem !important;
+        padding: 0 1.25rem !important;
         color: #111 !important;
         width: 100% !important;
         box-sizing: border-box !important;
         min-width: 0 !important;
         border: none !important;
+        border-radius: 8px !important;
         box-shadow: none !important;
         outline: none !important;
+        background-color: #f0f2f6 !important;
+        text-align: left !important;
+        position: relative !important;
+        z-index: 1 !important;
     }
     .target-settings-section [data-testid="stTextInput"] input:focus,
     div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stTextInput"] input:focus {
@@ -410,6 +438,10 @@ st.markdown("""
         align-items: center !important;
         border: none !important;
         box-shadow: none !important;
+        background-color: #f0f2f6 !important;
+        border-radius: 8px !important;
+        position: relative !important;
+        z-index: 1 !important;
     }
     .target-settings-section [data-testid="stCaptionContainer"],
     div[data-testid="stVerticalBlock"]:has(.target-settings-section) [data-testid="stCaptionContainer"] {
@@ -434,20 +466,20 @@ st.markdown("""
     .target-card-header {
         background: #137D78;
         color: #fff;
-        padding: 1rem 1.25rem;
+        padding: 1.35rem 1.5rem;
         text-align: center;
         border-radius: 12px 12px 0 0;
         margin: 0;
-        font-size: 2.25rem !important;
+        font-size: 2.85rem !important;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
     .target-card-header .target-card-subtitle {
         display: block;
-        font-size: 1.45rem;
+        font-size: 1.8rem;
         font-weight: 700;
-        margin-top: 0.35rem;
+        margin-top: 0.45rem;
         opacity: 0.95;
         text-transform: none;
         letter-spacing: normal;
@@ -471,13 +503,27 @@ st.markdown("""
         padding: 0 1rem 0.75rem 1rem;
     }
     .forecast-separator { border-top: 1px solid #e5e7eb; margin: 0.75rem 1rem 0.5rem 1rem; width: auto; }
-    .target-footer-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 1rem; font-size: 1.35rem; color: #374151; }
-    .target-footer-row .target-footer-icon { opacity: 0.8; font-size: 1.35rem; }
-    .target-footer-row .target-footer-label { font-weight: 600; min-width: 9rem; font-size: 1.35rem; }
-    .target-footer-row .target-footer-value { font-weight: 700; color: #1f2937; font-size: 1.35rem; }
-    .target-footer-status-done { color: #0f766e; font-weight: 700; font-size: 1.35rem; }
-    .target-footer-status-icon-done { color: #16a34a; }
+    .target-footer-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; font-size: 1.65rem; color: #374151; }
+    .target-footer-row .target-footer-icon { opacity: 0.8; font-size: 1.65rem; }
+    .target-footer-row .target-footer-label { font-weight: 600; min-width: 10rem; font-size: 1.65rem; }
+    .target-footer-row .target-footer-value { font-weight: 700; color: #1f2937; font-size: 1.65rem; }
+    .target-footer-status-done { color: #0f766e; font-weight: 700; font-size: 1.65rem; }
+    .target-footer-status-icon-done { color: #16a34a; font-size: 1.65rem; }
     .target-footer-wrap { padding-bottom: 1rem; }
+    /* Hide 'Press Enter to apply' everywhere so readers don't see it */
+    div[data-testid="InputInstructions"],
+    div[data-testid="stInputInstructions"],
+    [data-testid*="InputInstructions"],
+    [data-testid*="InputInstruction"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        pointer-events: none !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -538,14 +584,14 @@ sales_goal = float(st.session_state.target_annual_sales_goal)
 profit_goal = float(st.session_state.target_annual_net_profit_goal)
 year_days = 365
 
-# --------------- Target Settings card (no empty header) ---------------
+# --------------- Goal inputs: side-by-side ---------------
 with st.container():
     st.markdown(
         '<div class="target-settings-section">',
         unsafe_allow_html=True,
     )
-    c1, c2 = st.columns(2)
-    with c1:
+    col1, col2 = st.columns(2)
+    with col1:
         st.text_input(
             "Annual Sales Goal ($)",
             value=st.session_state.tp_sales_goal_text,
@@ -553,7 +599,7 @@ with st.container():
             on_change=_on_sales_text_change,
             placeholder="e.g. 10,000,000",
         )
-    with c2:
+    with col2:
         st.text_input(
             "Annual Net Profit Goal ($)",
             value=st.session_state.tp_profit_goal_text,
