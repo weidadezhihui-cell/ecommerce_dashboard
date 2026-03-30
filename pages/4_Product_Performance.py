@@ -6,6 +6,7 @@ PowerBI-style in-dashboard slicers + YoY overlay charts (Jan–Dec, line per yea
 from __future__ import annotations
 
 import calendar
+import html
 from typing import Dict, List
 
 import pandas as pd
@@ -13,6 +14,47 @@ import plotly.express as px
 import streamlit as st
 
 from utils import to_money
+
+# Readability: chart HTML titles & Plotly fonts (axis, tick, legend, bar/pie labels)
+CHART_TITLE_TOP_PX = 18
+CHART_TITLE_MID_PX = 17
+CHART_TITLE_BOT_PX = 16
+CHART_AXIS_TITLE_PT = 16
+CHART_TICK_PT = 14
+CHART_LEGEND_PT = 14
+CHART_BAR_TEXT_PT = 14
+CHART_PIE_TEXT_PT = 14
+
+
+def _plotly_three_line_centered_title(top: str, middle: str, bottom: str) -> dict:
+    """Three centered lines: chart scope (top), product (bold middle), metric (bottom)."""
+    return {
+        "text": (
+            f"<span style='font-size:{CHART_TITLE_TOP_PX}px;font-weight:600'>{html.escape(top)}</span><br>"
+            f"<span style='font-size:{CHART_TITLE_MID_PX}px;font-weight:700'>{html.escape(middle)}</span><br>"
+            f"<span style='font-size:{CHART_TITLE_BOT_PX}px;font-weight:400'>{html.escape(bottom)}</span>"
+        ),
+        "x": 0.5,
+        "xanchor": "center",
+    }
+
+
+# YoY chart colors vs max year in view (newest = KPI teal; vibrant palette for contrast)
+_BRAND_TEAL = "#0F766E"
+_VIBRANT_SKY_BLUE = "#0EA5E9"
+_EMERALD_GREEN = "#10B981"
+
+
+def brand_color_for_year(year: int, max_year: int) -> str:
+    """Newest year = dark teal; max-1 = sky blue; max-2 and older = emerald green."""
+    if year == max_year:
+        return _BRAND_TEAL
+    if year == max_year - 1:
+        return _VIBRANT_SKY_BLUE
+    if year <= max_year - 2:
+        return _EMERALD_GREEN
+    return _EMERALD_GREEN
+
 
 # ----------------------------
 # Page config / title (styles aligned with Key Performance Indicator page)
@@ -23,13 +65,28 @@ st.markdown(
     <style>
     .kpi-page-title { font-size: 2.75rem !important; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem; }
     .product-page-subtitle { font-size: 1.25rem !important; color: #6b7280; margin-bottom: 1rem; }
+    /* Main section headers — do not change size/weight (Filters, KPIs, Visualizations, etc.) */
     .product-section-title { font-size: 1.75rem !important; font-weight: 700; color: #1f2937; margin-top: 1rem; margin-bottom: 0.5rem; }
+    /* Filters: widget labels + values (scaled up vs prior 1.5rem / 1.25rem) */
     [data-testid="stSelectbox"] label, [data-testid="stSelectbox"] [data-testid="stWidgetLabel"], [data-testid="stSelectbox"] [data-testid="stWidgetLabel"] p,
-    [data-testid="stMultiSelect"] label, [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"], [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"] p { font-size: 1.5rem !important; font-weight: 600 !important; line-height: 1.4 !important; }
+    [data-testid="stMultiSelect"] label, [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"], [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"] p { font-size: 1.625rem !important; font-weight: 600 !important; line-height: 1.45 !important; }
     [data-testid="stSelectbox"], [data-testid="stMultiSelect"] { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; }
     [data-testid="stSelectbox"] label + div, [data-testid="stMultiSelect"] > div, [data-testid="stMultiSelect"] > div > div { width: 100% !important; min-height: 3.25rem !important; padding: 0.5rem 0.75rem !important; box-sizing: border-box !important; }
-    [data-testid="stSelectbox"] input, [data-testid="stMultiSelect"] input, [data-testid="stMultiSelect"] [data-testid="stWidgetValue"] { font-size: 1.25rem !important; }
-    [data-testid="stCaptionContainer"] { font-size: 1.25rem !important; }
+    [data-testid="stSelectbox"] input, [data-testid="stMultiSelect"] input, [data-testid="stMultiSelect"] [data-testid="stWidgetValue"] { font-size: 1.375rem !important; }
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] { font-size: 1rem !important; }
+    [data-testid="stCaptionContainer"] { font-size: 1.3125rem !important; line-height: 1.5 !important; }
+    /* Analyze section: radio option labels */
+    section[data-testid="stMain"] [data-testid="stRadio"] div[role="radiogroup"] label,
+    section[data-testid="stMain"] [data-testid="stRadio"] div[role="radiogroup"] label p,
+    section[data-testid="stMain"] [data-testid="stRadio"] div[role="radiogroup"] label span { font-size: 1.125rem !important; line-height: 1.45 !important; }
+    /* AI summary + footnote */
+    section[data-testid="stMain"] [data-testid="stAlert"] { font-size: 1.125rem !important; line-height: 1.55 !important; }
+    section[data-testid="stMain"] [data-testid="stAlert"] p { font-size: 1.125rem !important; }
+    /* Transaction Bucket + Metric radios: selected state = brand teal */
+    section[data-testid="stMain"] [data-testid="stRadio"] div[role="radiogroup"] label[data-baseweb="radio"] input:checked + div {
+        background-color: #0F766E !important;
+        border-color: #0F766E !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -139,6 +196,28 @@ def human_metric_label(metric: str) -> str:
     if metric == "net_proceeds":
         return "Net Proceeds ($)"
     return metric
+
+
+# Third line of chart titles: Transaction Bucket × Metric (UI radio labels)
+_CHART_TITLE_METRIC_PHRASES: Dict[tuple[str, str], str] = {
+    ("Order", "Units (Quantity)"): "Units Ordered",
+    ("Order", "Sales ($)"): "Gross Sales Revenue ($)",
+    ("Order", "Net Proceeds ($)"): "Net Proceeds from Orders ($)",
+    ("Refund", "Units (Quantity)"): "Units Refunded",
+    ("Refund", "Sales ($)"): "Total Refunded Amount ($)",
+    ("Refund", "Net Proceeds ($)"): "Net Refund Cost ($)",
+    ("Liquidations", "Units (Quantity)"): "Liquidated Units",
+    ("Liquidations", "Sales ($)"): "Gross Liquidation Value ($)",
+    ("Liquidations", "Net Proceeds ($)"): "Net Proceeds from Liquidations ($)",
+    ("Adjustment", "Units (Quantity)"): "Inventory Adjustments (Units)",
+    ("Adjustment", "Sales ($)"): "Gross Adjustment Value ($)",
+    ("Adjustment", "Net Proceeds ($)"): "Net Proceeds from Adjustments ($)",
+}
+
+
+def chart_title_metric_phrase(txn_bucket: str, selected_metric_ui: str, fallback: str) -> str:
+    """Natural-sounding subtitle for charts from Transaction Bucket × Metric radios."""
+    return _CHART_TITLE_METRIC_PHRASES.get((txn_bucket, selected_metric_ui), fallback)
 
 
 def format_years(years: List[int]) -> str:
@@ -344,8 +423,8 @@ st.markdown("<h2 class='product-section-title'>Key Performance Indicators</h2>",
 if st.session_state.selected_product == "All" or _is_placeholder(st.session_state.selected_product):
     st.markdown(
         f"<div style='width:100%;'>"
-        f"<div style='text-align:center; font-size:1.4em; font-weight:700;'>All Products</div>"
-        f"<div style='text-align:center; font-size:1.2em;'>Years: {years_label_kpi}</div>"
+        f"<div style='text-align:center; font-size:1.55em; font-weight:700;'>All Products</div>"
+        f"<div style='text-align:center; font-size:1.35em;'>Years: {years_label_kpi}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -353,9 +432,9 @@ else:
     prod_header = sanitize_display(st.session_state.selected_product, "All Products")
     st.markdown(
         f"<div style='width:100%;'>"
-        f"<div style='text-align:center; font-size:1.2em; font-weight:700; overflow-x:auto;'>"
+        f"<div style='text-align:center; font-size:1.35em; font-weight:700; overflow-x:auto;'>"
         f"<span style='white-space:nowrap;'>Product: {prod_header}</span></div>"
-        f"<div style='text-align:center; font-size:1.2em;'>Years: {years_label_kpi}</div>"
+        f"<div style='text-align:center; font-size:1.35em;'>Years: {years_label_kpi}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -374,36 +453,36 @@ return_rate = (kpis["units_returned"] / kpis["units_sold"]) if kpis["units_sold"
 
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.markdown(
-    f"<div style='text-align:center; font-size:1.05em; font-weight:600; color:#0f766e;'>Units Sold</div>"
+    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Units Sold</div>"
     f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>{kpis['units_sold']:,.0f}</div>"
-    f"<div style='text-align:center; font-size:1.2em;'>(${sales_order:,.0f})</div>",
+    f"<div style='text-align:center; font-size:1.3em; color:#4b5563;'>(${sales_order:,.0f})</div>",
     unsafe_allow_html=True,
 )
 k2.markdown(
-    f"<div style='text-align:center; font-size:1.05em; font-weight:600; color:#0f766e;'>Units Returned | Return Rate</div>"
+    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Units Returned | Return Rate</div>"
     f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>{kpis['units_returned']:,.0f} | {return_rate:.1%}</div>"
-    f"<div style='text-align:center; font-size:1.2em;'>(-${sales_refund_abs:,.0f})</div>",
+    f"<div style='text-align:center; font-size:1.3em; color:#4b5563;'>(-${sales_refund_abs:,.0f})</div>",
     unsafe_allow_html=True,
 )
 k3.markdown(
-    f"<div style='text-align:center; font-size:1.05em; font-weight:600; color:#0f766e;'>Net Units Sold</div>"
+    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Net Units Sold</div>"
     f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>{kpis['net_units']:,.0f}</div>"
-    f"<div style='text-align:center; font-size:1.2em;'>(${net_sales_value:,.0f})</div>",
+    f"<div style='text-align:center; font-size:1.3em; color:#4b5563;'>(${net_sales_value:,.0f})</div>",
     unsafe_allow_html=True,
 )
 k4.markdown(
-    f"<div style='text-align:center; font-size:1.05em; font-weight:600; color:#0f766e;'>Total Amazon Fees ($)</div>"
+    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Total Amazon Fees ($)</div>"
     f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>${total_amazon_fees:,.0f}</div>",
     unsafe_allow_html=True,
 )
 k5.markdown(
-    f"<div style='text-align:center; font-size:1.05em; font-weight:600; color:#0f766e;'>Net Proceeds ($)</div>"
+    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Net Proceeds ($)</div>"
     f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>${kpis['net_proceeds']:,.0f}</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
     "<br>"
-    "<div style='font-size:1.05em;'>"
+    "<div style='font-size:1.125em; line-height:1.55; color:#374151;'>"
     "Note:<br>"
     "Net Units Sold = Units Sold \u2212 Units Returned.<br>"
     "Amounts in parentheses ($) show the related sales or refund value.<br>"
@@ -416,7 +495,7 @@ with st.container():
     st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
     st.markdown("<h2 class='product-section-title'>What Do You Want to Analyze?</h2>", unsafe_allow_html=True)
     st.markdown(
-        "<div style='font-size:1.05em;'>These options change the charts below.</div>",
+        "<div style='font-size:1.125em; line-height:1.5; color:#4b5563;'>These options change the charts below.</div>",
         unsafe_allow_html=True,
     )
     st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
@@ -429,7 +508,7 @@ with st.container():
 
     with row2[0]:
         st.markdown(
-            "<div style='font-size:1.1em; font-weight:600; color:#0f766e;'>Transaction Bucket</div>",
+            "<div style='font-size:1.25em; font-weight:600; color:#0f766e;'>Transaction Bucket</div>",
             unsafe_allow_html=True,
         )
         st.radio(
@@ -442,7 +521,7 @@ with st.container():
 
     with row2[1]:
         st.markdown(
-            "<div style='font-size:1.1em; font-weight:600; color:#0f766e;'>Metric</div>",
+            "<div style='font-size:1.25em; font-weight:600; color:#0f766e;'>Metric</div>",
             unsafe_allow_html=True,
         )
         metric_options = ["Units (Quantity)", "Sales ($)", "Net Proceeds ($)"]
@@ -465,9 +544,14 @@ metric_value_map = {
 }
 value_col = metric_value_map.get(st.session_state.selected_metric, "units")
 metric_label = human_metric_label(value_col)
+chart_title_metric_line = chart_title_metric_phrase(
+    st.session_state.selected_txn_bucket,
+    st.session_state.selected_metric,
+    metric_label,
+)
 years_label = format_years(st.session_state.selected_years or [])
 
-pie_title = f"{st.session_state.selected_txn_bucket} • {metric_label} by Year"
+_pie_bar_top = "Annual Comparison"
 
 if value_col == "net_proceeds":
     m_transfer = transfer_mask(df_chart)
@@ -476,43 +560,84 @@ else:
     df_chart_effective = df_chart
 
 df_year = df_chart_effective.groupby("year", as_index=False)[value_col].sum()
+df_year["year"] = df_year["year"].astype(int)
+_years_sorted = sorted(df_year["year"].unique().tolist())
+_max_chart_year = max(_years_sorted) if _years_sorted else None
+year_color_map = (
+    {y: brand_color_for_year(int(y), int(_max_chart_year)) for y in _years_sorted}
+    if _max_chart_year is not None
+    else {}
+)
+# Bar charts: color must be categorical strings — integer year triggers a continuous bluescale + bad axis
+year_color_map_str = {str(y): year_color_map[y] for y in _years_sorted}
+
 fig_pie = px.pie(
     df_year,
     values=value_col,
     names="year",
-    title=pie_title,
+    color="year",
+    color_discrete_map=year_color_map,
 )
+fig_pie.update_layout(
+    title=_plotly_three_line_centered_title(_pie_bar_top, sku_label, chart_title_metric_line),
+    margin=dict(t=135),
+    font=dict(size=CHART_TICK_PT),
+    legend=dict(font=dict(size=CHART_LEGEND_PT)),
+)
+fig_pie.update_traces(textfont=dict(size=CHART_PIE_TEXT_PT))
 
 if st.session_state.selected_product != "All":
-    bar_title = f"{st.session_state.selected_txn_bucket} • {metric_label} by Year"
     df_bar = df_chart_effective.groupby("year", as_index=False)[value_col].sum()
+    df_bar["year"] = df_bar["year"].astype(int)
+    # Categorical y so Plotly does not treat year as continuous (no 2023.5 / 2,024.5 ticks)
+    df_bar["year_label"] = df_bar["year"].astype(str)
     fig_bar = px.bar(
         df_bar,
         x=value_col,
-        y="year",
+        y="year_label",
         orientation="h",
         text=value_col,
-        title=bar_title,
-        labels={"year": "Year", value_col: metric_label},
+        color="year_label",
+        color_discrete_map=year_color_map_str,
+        labels={"year_label": "Year", value_col: metric_label},
     )
-    fig_bar.update_traces(texttemplate="%{text:.2s}", textposition="outside")
+    fig_bar.update_traces(
+        texttemplate="%{text:.2s}",
+        textposition="outside",
+        textfont=dict(size=CHART_BAR_TEXT_PT),
+    )
+    fig_bar.update_layout(showlegend=False, coloraxis_showscale=False, margin=dict(t=135))
+    _years_cat = [str(y) for y in sorted(df_bar["year"].unique())]
+    fig_bar.update_yaxes(type="category", categoryorder="array", categoryarray=_years_cat)
 else:
-    bar_title = f"{st.session_state.selected_txn_bucket} • {metric_label} by Product"
-    top_n = 8
-    df_prod = df_chart_effective.groupby("product_display", as_index=False)[value_col].sum()
-    top_products = df_prod.sort_values(value_col, ascending=False).head(top_n)["product_display"].tolist()
-    df_chart_effective["product_group"] = df_chart_effective["product_display"].where(
-        df_chart_effective["product_display"].isin(top_products), "Other"
-    )
-    df_stack = df_chart_effective.groupby(["year", "product_group"], as_index=False)[value_col].sum()
+    # All products: one bar per year (totals only), same colors as line & pie — no product breakdown
+    df_bar = df_year.copy()
+    df_bar["year_label"] = df_bar["year"].astype(str)
     fig_bar = px.bar(
-        df_stack,
-        x="year",
+        df_bar,
+        x="year_label",
         y=value_col,
-        color="product_group",
-        title=bar_title,
-        labels={"year": "Year", value_col: metric_label, "product_group": "Product"},
+        color="year_label",
+        color_discrete_map=year_color_map_str,
+        labels={"year_label": "Year", value_col: metric_label},
     )
+    fig_bar.update_traces(textfont=dict(size=CHART_BAR_TEXT_PT))
+    fig_bar.update_layout(showlegend=False, coloraxis_showscale=False, margin=dict(t=135))
+    _x_order = [str(y) for y in _years_sorted]
+    fig_bar.update_xaxes(type="category", categoryorder="array", categoryarray=_x_order)
+
+fig_bar.update_layout(
+    title=_plotly_three_line_centered_title(_pie_bar_top, sku_label, chart_title_metric_line),
+    font=dict(size=CHART_TICK_PT),
+)
+fig_bar.update_xaxes(
+    title_font=dict(size=CHART_AXIS_TITLE_PT),
+    tickfont=dict(size=CHART_TICK_PT),
+)
+fig_bar.update_yaxes(
+    title_font=dict(size=CHART_AXIS_TITLE_PT),
+    tickfont=dict(size=CHART_TICK_PT),
+)
 
 # ----------------------------
 # YoY overlay chart (Jan–Dec, line per year)
@@ -526,16 +651,15 @@ df_yoy = (
 )
 
 df_yoy["month"] = df_yoy["month"].astype(int)
-
-chart_title = f"Monthly Trend (YoY) • {metric_label}"
+df_yoy["year"] = df_yoy["year"].astype(int)
 
 fig_yoy = px.line(
     df_yoy,
     x="month",
     y=value_col,
     color="year",
+    color_discrete_map=year_color_map,
     markers=True,
-    title=chart_title,
     labels={"month": "Month", value_col: value_label, "year": "Year"},
 )
 
@@ -543,14 +667,35 @@ fig_yoy.update_xaxes(
     tickmode="array",
     tickvals=list(range(1, 13)),
     ticktext=MONTH_ABBR,
+    title_font=dict(size=CHART_AXIS_TITLE_PT),
+    tickfont=dict(size=CHART_TICK_PT),
+)
+fig_yoy.update_yaxes(
+    title_font=dict(size=CHART_AXIS_TITLE_PT),
+    tickfont=dict(size=CHART_TICK_PT),
+)
+# Legend for Year on the right; top margin fits three-line centered title
+fig_yoy.update_layout(
+    title=_plotly_three_line_centered_title("Monthly Trend (YoY)", sku_label, chart_title_metric_line),
+    font=dict(size=CHART_TICK_PT),
+    legend=dict(
+        orientation="v",
+        yanchor="middle",
+        y=0.5,
+        xanchor="left",
+        x=1.02,
+        font=dict(size=CHART_LEGEND_PT),
+    ),
+    margin=dict(l=64, r=128, t=145, b=60),
 )
 
-left_col, right_col = st.columns([2.2, 1.0])
-with left_col:
-    st.plotly_chart(fig_yoy, use_container_width=True)
-with right_col:
-    st.plotly_chart(fig_pie, use_container_width=True)
+# Monthly trend full width; bar (left) and pie (right) on one row
+st.plotly_chart(fig_yoy, use_container_width=True)
+_bar_col, _pie_col = st.columns([1.35, 1.0], gap="large")
+with _bar_col:
     st.plotly_chart(fig_bar, use_container_width=True)
+with _pie_col:
+    st.plotly_chart(fig_pie, use_container_width=True)
 
 st.markdown("<h2 class='product-section-title'>AI Analysis (Auto Summary)</h2>", unsafe_allow_html=True)
 analysis_text = ai_analysis_summary(
