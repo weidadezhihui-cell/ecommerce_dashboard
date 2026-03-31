@@ -16,31 +16,42 @@ import streamlit as st
 from utils import to_money
 
 # Readability: chart HTML titles & Plotly fonts (axis, tick, legend, bar/pie labels)
-CHART_TITLE_TOP_PX = 18
-CHART_TITLE_MID_PX = 17
-CHART_TITLE_BOT_PX = 16
-CHART_AXIS_TITLE_PT = 16
-CHART_TICK_PT = 14
-CHART_LEGEND_PT = 14
-CHART_BAR_TEXT_PT = 14
-CHART_PIE_TEXT_PT = 14
+CHART_TITLE_TOP_PX = 20
+CHART_TITLE_MID_PX = 19
+CHART_TITLE_BOT_PX = 18
+CHART_AXIS_TITLE_PT = 18
+CHART_TICK_PT = 16
+CHART_LEGEND_PT = 16
+CHART_BAR_TEXT_PT = 16
+CHART_PIE_TEXT_PT = 16
+
+# Monthly YoY line chart height (taller for clearer trend)
+CHART_YOY_HEIGHT_PX = 580
+
+
+def _three_line_chart_title_html(top: str, middle: str, bottom: str) -> str:
+    """Shared HTML for three-line chart headers (line breaks + spacing between lines)."""
+    return (
+        f"<span style='font-size:{CHART_TITLE_TOP_PX}px;font-weight:600;line-height:1.42;color:#1f2937'>"
+        f"{html.escape(top)}</span><br><br>"
+        f"<span style='font-size:{CHART_TITLE_MID_PX}px;font-weight:700;line-height:1.48;color:#1f2937'>"
+        f"{html.escape(middle)}</span><br><br>"
+        f"<span style='font-size:{CHART_TITLE_BOT_PX}px;font-weight:400;line-height:1.48;color:#1f2937'>"
+        f"{html.escape(bottom)}</span>"
+    )
 
 
 def _plotly_three_line_centered_title(top: str, middle: str, bottom: str) -> dict:
-    """Three centered lines: chart scope (top), product (bold middle), metric (bottom)."""
+    """Plotly layout title dict (bar/pie). YoY line chart uses Streamlit heading instead — see below."""
     return {
-        "text": (
-            f"<span style='font-size:{CHART_TITLE_TOP_PX}px;font-weight:600'>{html.escape(top)}</span><br>"
-            f"<span style='font-size:{CHART_TITLE_MID_PX}px;font-weight:700'>{html.escape(middle)}</span><br>"
-            f"<span style='font-size:{CHART_TITLE_BOT_PX}px;font-weight:400'>{html.escape(bottom)}</span>"
-        ),
+        "text": _three_line_chart_title_html(top, middle, bottom),
         "x": 0.5,
         "xanchor": "center",
     }
 
 
-# YoY chart colors vs max year in view (newest = KPI teal; vibrant palette for contrast)
-_BRAND_TEAL = "#0F766E"
+# YoY chart colors vs max year in view (newest = KPI dark teal; vibrant palette for contrast)
+_BRAND_TEAL = "#0f766e"
 _VIBRANT_SKY_BLUE = "#0EA5E9"
 _EMERALD_GREEN = "#10B981"
 
@@ -56,17 +67,112 @@ def brand_color_for_year(year: int, max_year: int) -> str:
     return _EMERALD_GREEN
 
 
+def _kpi_info_tooltip(explanation: str) -> str:
+    """Native HTML title tooltip (ℹ️) for KPI definitions."""
+    return (
+        f'<span class="product-kpi-info" role="img" aria-label="{html.escape(explanation)}" '
+        f'title="{html.escape(explanation)}">&#8505;&#65039;</span>'
+    )
+
+
 # ----------------------------
 # Page config / title (styles aligned with Key Performance Indicator page)
 # ----------------------------
 st.set_page_config(page_title="Product Performance", layout="wide")
 st.markdown(
+    '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" '
+    'crossorigin="anonymous" referrerpolicy="no-referrer"/>',
+    unsafe_allow_html=True,
+)
+st.markdown(
     """
     <style>
-    .kpi-page-title { font-size: 2.75rem !important; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem; }
-    .product-page-subtitle { font-size: 1.25rem !important; color: #6b7280; margin-bottom: 1rem; }
-    /* Main section headers — do not change size/weight (Filters, KPIs, Visualizations, etc.) */
-    .product-section-title { font-size: 1.75rem !important; font-weight: 700; color: #1f2937; margin-top: 1rem; margin-bottom: 0.5rem; }
+    .kpi-page-title { font-size: 2.75rem !important; font-weight: 700; color: #1f2937; margin-bottom: 0.35rem !important; }
+    .product-page-subtitle { font-size: 1.25rem !important; color: #6b7280; margin-bottom: 0.4rem !important; }
+    /* Section headers — dark teal to match Key Performance Indicator page */
+    .product-section-title { font-size: 1.75rem !important; font-weight: 700; color: #0f766e !important; margin-top: 1rem; margin-bottom: 0.5rem; }
+    /* Power BI–style tiles: bordered containers from st.container(border=True) */
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-product-tile="kpi"]),
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-product-tile="viz"]),
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-product-tile="ai"]) {
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 3px 0px !important;
+        background: #ffffff !important;
+        padding: 1.35rem 1.5rem 1.5rem 1.5rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-product-tile="kpi"]) div[data-testid="stHorizontalBlock"] {
+        justify-content: center !important;
+        max-width: 1400px;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+    /* Nested chart tiles — Power BI–style elevated cards (visible outer shadow) */
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-chart-tile="yoy"]),
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-chart-tile="bar"]),
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-chart-tile="pie"]) {
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        background: #ffffff !important;
+        padding: 0.85rem 1rem 1rem 1rem !important;
+        overflow: visible !important;
+        /* Fluent / Power BI–like layered elevation */
+        box-shadow:
+            0 0.5px 1.5px rgba(15, 23, 42, 0.12),
+            0 2px 6px rgba(15, 23, 42, 0.08),
+            0 8px 20px rgba(15, 23, 42, 0.07) !important;
+    }
+    /* YoY card: three-line title + chart inside one bordered tile (extra top padding for headings) */
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-chart-tile="yoy"]) {
+        margin-bottom: 1.35rem !important;
+        margin-top: 2px !important;
+        padding: 1.05rem 1.15rem 1.15rem 1.15rem !important;
+    }
+    .product-yoy-chart-block {
+        width: 100%;
+    }
+    /* YoY title block — Streamlit HTML above the Plotly iframe (not layout.title) */
+    .product-yoy-chart-heading {
+        text-align: center;
+        margin: 0 0 0.45rem 0 !important;
+        padding: 0.1rem 0.5rem 0.2rem 0.5rem !important;
+        position: relative;
+        z-index: 1;
+        background: #ffffff;
+    }
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-chart-tile="bar"]),
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-chart-tile="pie"]) {
+        margin-top: 2px !important;
+        margin-bottom: 2px !important;
+    }
+    /* Let chart-card shadows paint outside the Visualizations panel */
+    section[data-testid="stMain"] div[data-testid="stVerticalBlockBorderWrapper"]:has([data-product-tile="viz"]) {
+        overflow: visible !important;
+    }
+    /* Section titles sit above tiles (not inside the bordered box) */
+    h2.product-section-title { margin-bottom: 0.5rem !important; }
+    .product-kpi-label { font-size: 1.25rem !important; font-weight: 600 !important; color: #0f766e !important; line-height: 1.35 !important; display: flex !important; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.3rem; }
+    .product-kpi-icon { color: #0f766e !important; opacity: 0.92; font-size: 1.05em; }
+    .product-kpi-info { cursor: help; font-size: 0.95rem; opacity: 0.75; vertical-align: middle; }
+    .product-kpi-info:hover { opacity: 1; }
+    .product-kpi-value { font-size: 2rem !important; font-weight: 800 !important; color: #111827 !important; line-height: 1.2 !important; letter-spacing: -0.02em; }
+    .product-kpi-sub { font-size: 1.15rem !important; font-weight: 500 !important; color: #4b5563 !important; line-height: 1.4 !important; }
+    .product-kpi-cell { text-align: center; padding: 0.35rem 0.25rem; }
+    /* Year multiselect chips: soft slate (not error red) */
+    section[data-testid="stMain"] [data-testid="stMultiSelect"] [data-baseweb="tag"] {
+        background-color: #F1F5F9 !important;
+        color: #1e293b !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    section[data-testid="stMain"] [data-testid="stMultiSelect"] [data-baseweb="tag"] span {
+        color: #1e293b !important;
+    }
+    section[data-testid="stMain"] [data-testid="stMultiSelect"] [data-baseweb="tag"] [role="button"],
+    section[data-testid="stMain"] [data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
+        color: #475569 !important;
+        fill: #475569 !important;
+    }
     /* Filters: widget labels + values (scaled up vs prior 1.5rem / 1.25rem) */
     [data-testid="stSelectbox"] label, [data-testid="stSelectbox"] [data-testid="stWidgetLabel"], [data-testid="stSelectbox"] [data-testid="stWidgetLabel"] p,
     [data-testid="stMultiSelect"] label, [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"], [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"] p { font-size: 1.625rem !important; font-weight: 600 !important; line-height: 1.45 !important; }
@@ -84,8 +190,8 @@ st.markdown(
     section[data-testid="stMain"] [data-testid="stAlert"] p { font-size: 1.125rem !important; }
     /* Transaction Bucket + Metric radios: selected state = brand teal */
     section[data-testid="stMain"] [data-testid="stRadio"] div[role="radiogroup"] label[data-baseweb="radio"] input:checked + div {
-        background-color: #0F766E !important;
-        border-color: #0F766E !important;
+        background-color: #0f766e !important;
+        border-color: #0f766e !important;
     }
     </style>
     """,
@@ -324,7 +430,10 @@ else:
     ] or available_years
 
 with st.container():
-    st.markdown("<div class='product-section-title' style='margin-top:0;'>Filters</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='product-section-title' style='margin-top:0;margin-bottom:0.35rem;'>Filters</div>",
+        unsafe_allow_html=True,
+    )
     row1 = st.columns([2.6, 2.6, 1.0])
 
     df_skus = df_base[bucket_mask(df_base["txn_type"], st.session_state.selected_txn_bucket)].copy()
@@ -419,27 +528,6 @@ years_label_kpi = (
     else "(none)"
 )
 
-st.markdown("<h2 class='product-section-title'>Key Performance Indicators</h2>", unsafe_allow_html=True)
-if st.session_state.selected_product == "All" or _is_placeholder(st.session_state.selected_product):
-    st.markdown(
-        f"<div style='width:100%;'>"
-        f"<div style='text-align:center; font-size:1.55em; font-weight:700;'>All Products</div>"
-        f"<div style='text-align:center; font-size:1.35em;'>Years: {years_label_kpi}</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-else:
-    prod_header = sanitize_display(st.session_state.selected_product, "All Products")
-    st.markdown(
-        f"<div style='width:100%;'>"
-        f"<div style='text-align:center; font-size:1.35em; font-weight:700; overflow-x:auto;'>"
-        f"<span style='white-space:nowrap;'>Product: {prod_header}</span></div>"
-        f"<div style='text-align:center; font-size:1.35em;'>Years: {years_label_kpi}</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-st.markdown("<hr style='border:0; border-top:2px solid #0f766e; margin:10px 0 14px 0;'>", unsafe_allow_html=True)
 total_amazon_fees = float(kpis["net_sales"] - kpis["net_proceeds"])
 sales_series = safe_num(df_scope["product_sales"]) if "product_sales" in df_scope.columns else pd.Series(0, index=df_scope.index)
 txn_series = df_scope.get("txn_type", pd.Series([""] * len(df_scope), index=df_scope.index)).astype(str)
@@ -451,45 +539,101 @@ sales_refund_abs = abs(sales_refund)
 net_sales_value = float(sales_order - sales_refund_abs)
 return_rate = (kpis["units_returned"] / kpis["units_sold"]) if kpis["units_sold"] else 0
 
-k1, k2, k3, k4, k5 = st.columns(5)
-k1.markdown(
-    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Units Sold</div>"
-    f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>{kpis['units_sold']:,.0f}</div>"
-    f"<div style='text-align:center; font-size:1.3em; color:#4b5563;'>(${sales_order:,.0f})</div>",
-    unsafe_allow_html=True,
-)
-k2.markdown(
-    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Units Returned | Return Rate</div>"
-    f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>{kpis['units_returned']:,.0f} | {return_rate:.1%}</div>"
-    f"<div style='text-align:center; font-size:1.3em; color:#4b5563;'>(-${sales_refund_abs:,.0f})</div>",
-    unsafe_allow_html=True,
-)
-k3.markdown(
-    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Net Units Sold</div>"
-    f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>{kpis['net_units']:,.0f}</div>"
-    f"<div style='text-align:center; font-size:1.3em; color:#4b5563;'>(${net_sales_value:,.0f})</div>",
-    unsafe_allow_html=True,
-)
-k4.markdown(
-    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Total Amazon Fees ($)</div>"
-    f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>${total_amazon_fees:,.0f}</div>",
-    unsafe_allow_html=True,
-)
-k5.markdown(
-    f"<div style='text-align:center; font-size:1.15em; font-weight:600; color:#0f766e;'>Net Proceeds ($)</div>"
-    f"<div style='text-align:center; font-size:1.6em; font-weight:700;'>${kpis['net_proceeds']:,.0f}</div>",
-    unsafe_allow_html=True,
-)
-st.markdown(
-    "<br>"
-    "<div style='font-size:1.125em; line-height:1.55; color:#374151;'>"
-    "Note:<br>"
-    "Net Units Sold = Units Sold \u2212 Units Returned.<br>"
-    "Amounts in parentheses ($) show the related sales or refund value.<br>"
-    "Net Proceeds = Net Sales \u2212 Amazon fees (FBA, referral, etc.)."
-    "</div>",
-    unsafe_allow_html=True,
-)
+st.markdown("<h2 class='product-section-title'>Key Performance Indicators</h2>", unsafe_allow_html=True)
+with st.container(border=True):
+    st.markdown(
+        '<div data-product-tile="kpi" style="display:none;width:0;height:0;position:absolute;" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
+    if st.session_state.selected_product == "All" or _is_placeholder(st.session_state.selected_product):
+        st.markdown(
+            f"<div style='width:100%;'>"
+            f"<div style='text-align:center; font-size:1.55em; font-weight:700; color:#111827;'>All Products</div>"
+            f"<div style='text-align:center; font-size:1.35em; color:#4b5563;'>Years: {years_label_kpi}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        prod_header = sanitize_display(st.session_state.selected_product, "All Products")
+        st.markdown(
+            f"<div style='width:100%;'>"
+            f"<div style='text-align:center; font-size:1.35em; font-weight:700; overflow-x:auto; color:#111827;'>"
+            f"<span style='white-space:nowrap;'>Product: {prod_header}</span></div>"
+            f"<div style='text-align:center; font-size:1.35em; color:#4b5563;'>Years: {years_label_kpi}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        "<hr style='border:0; border-top:1px solid #E2E8F0; margin:12px 0 16px 0;'>",
+        unsafe_allow_html=True,
+    )
+
+    _tip_net_units = (
+        "Net Units Sold = Units Sold minus Units Returned. "
+        "The dollar amount in parentheses is net order sales (order sales minus refund amounts)."
+    )
+    _tip_fees = (
+        "Total Amazon Fees is estimated as Net Sales minus Net Proceeds "
+        "(FBA, referral, and other marketplace fees reflected in settlements)."
+    )
+    _tip_proceeds = (
+        "Net Proceeds = Net Sales minus Amazon fees (FBA, referral, etc.). "
+        "Does not include product cost (COGS) or inbound freight."
+    )
+
+    k1, k2, k3, k4, k5 = st.columns(5)
+    k1.markdown(
+        "<div class='product-kpi-cell'>"
+        "<div class='product-kpi-label'>"
+        '<i class="fa-solid fa-bag-shopping product-kpi-icon" aria-hidden="true"></i>'
+        "<span>Units Sold</span></div>"
+        f"<div class='product-kpi-value'>{kpis['units_sold']:,.0f}</div>"
+        f"<div class='product-kpi-sub'>(${sales_order:,.0f})</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    k2.markdown(
+        "<div class='product-kpi-cell'>"
+        "<div class='product-kpi-label'>"
+        '<i class="fa-solid fa-arrow-rotate-left product-kpi-icon" aria-hidden="true"></i>'
+        "<span>Units Returned | Return Rate</span></div>"
+        f"<div class='product-kpi-value'>{kpis['units_returned']:,.0f} | {return_rate:.1%}</div>"
+        f"<div class='product-kpi-sub'>(-${sales_refund_abs:,.0f})</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    k3.markdown(
+        "<div class='product-kpi-cell'>"
+        "<div class='product-kpi-label'>"
+        '<i class="fa-solid fa-cubes product-kpi-icon" aria-hidden="true"></i>'
+        "<span>Net Units Sold</span>"
+        f"{_kpi_info_tooltip(_tip_net_units)}</div>"
+        f"<div class='product-kpi-value'>{kpis['net_units']:,.0f}</div>"
+        f"<div class='product-kpi-sub'>(${net_sales_value:,.0f})</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    k4.markdown(
+        "<div class='product-kpi-cell'>"
+        "<div class='product-kpi-label'>"
+        '<i class="fa-solid fa-file-invoice-dollar product-kpi-icon" aria-hidden="true"></i>'
+        "<span>Total Amazon Fees ($)</span>"
+        f"{_kpi_info_tooltip(_tip_fees)}</div>"
+        f"<div class='product-kpi-value'>${total_amazon_fees:,.0f}</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    k5.markdown(
+        "<div class='product-kpi-cell'>"
+        "<div class='product-kpi-label'>"
+        '<i class="fa-solid fa-wallet product-kpi-icon" aria-hidden="true"></i>'
+        "<span>Net Proceeds ($)</span>"
+        f"{_kpi_info_tooltip(_tip_proceeds)}</div>"
+        f"<div class='product-kpi-value'>${kpis['net_proceeds']:,.0f}</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
 with st.container():
     st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
@@ -535,8 +679,6 @@ with st.container():
             label_visibility="collapsed",
         )
 
-st.markdown("<h2 class='product-section-title'>Visualizations</h2>", unsafe_allow_html=True)
-
 metric_value_map = {
     "Units (Quantity)": "units",
     "Sales ($)": "sales",
@@ -580,7 +722,7 @@ fig_pie = px.pie(
 )
 fig_pie.update_layout(
     title=_plotly_three_line_centered_title(_pie_bar_top, sku_label, chart_title_metric_line),
-    margin=dict(t=135),
+    margin=dict(t=178),
     font=dict(size=CHART_TICK_PT),
     legend=dict(font=dict(size=CHART_LEGEND_PT)),
 )
@@ -606,7 +748,7 @@ if st.session_state.selected_product != "All":
         textposition="outside",
         textfont=dict(size=CHART_BAR_TEXT_PT),
     )
-    fig_bar.update_layout(showlegend=False, coloraxis_showscale=False, margin=dict(t=135))
+    fig_bar.update_layout(showlegend=False, coloraxis_showscale=False, margin=dict(t=178))
     _years_cat = [str(y) for y in sorted(df_bar["year"].unique())]
     fig_bar.update_yaxes(type="category", categoryorder="array", categoryarray=_years_cat)
 else:
@@ -622,7 +764,7 @@ else:
         labels={"year_label": "Year", value_col: metric_label},
     )
     fig_bar.update_traces(textfont=dict(size=CHART_BAR_TEXT_PT))
-    fig_bar.update_layout(showlegend=False, coloraxis_showscale=False, margin=dict(t=135))
+    fig_bar.update_layout(showlegend=False, coloraxis_showscale=False, margin=dict(t=178))
     _x_order = [str(y) for y in _years_sorted]
     fig_bar.update_xaxes(type="category", categoryorder="array", categoryarray=_x_order)
 
@@ -674,30 +816,63 @@ fig_yoy.update_yaxes(
     title_font=dict(size=CHART_AXIS_TITLE_PT),
     tickfont=dict(size=CHART_TICK_PT),
 )
-# Legend for Year on the right; top margin fits three-line centered title
+# Legend top-right inside plot area. YoY title is Streamlit HTML inside the YoY bordered tile — do
+# not use layout.title (HTML titles can anchor inside the plot area and overlap series).
 fig_yoy.update_layout(
-    title=_plotly_three_line_centered_title("Monthly Trend (YoY)", sku_label, chart_title_metric_line),
+    title=None,
+    height=CHART_YOY_HEIGHT_PX,
     font=dict(size=CHART_TICK_PT),
     legend=dict(
-        orientation="v",
-        yanchor="middle",
-        y=0.5,
-        xanchor="left",
-        x=1.02,
+        orientation="h",
+        yanchor="top",
+        y=0.94,
+        xanchor="right",
+        x=0.99,
         font=dict(size=CHART_LEGEND_PT),
+        bgcolor="rgba(255,255,255,0.92)",
+        bordercolor="#E2E8F0",
+        borderwidth=1,
     ),
-    margin=dict(l=64, r=128, t=145, b=60),
+    margin=dict(l=72, r=56, t=56, b=64),
 )
 
 # Monthly trend full width; bar (left) and pie (right) on one row
-st.plotly_chart(fig_yoy, use_container_width=True)
-_bar_col, _pie_col = st.columns([1.35, 1.0], gap="large")
-with _bar_col:
-    st.plotly_chart(fig_bar, use_container_width=True)
-with _pie_col:
-    st.plotly_chart(fig_pie, use_container_width=True)
+st.markdown("<h2 class='product-section-title'>Visualizations</h2>", unsafe_allow_html=True)
+with st.container(border=True):
+    st.markdown(
+        '<div data-product-tile="viz" style="display:none;width:0;height:0;position:absolute;" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
+    with st.container(border=True):
+        # One markdown block: marker + visible title (avoids a lone hidden block that can show "undefined")
+        st.markdown(
+            "<div data-chart-tile='yoy' class='product-yoy-chart-block'>"
+            "<div class='product-yoy-chart-heading'>"
+            + _three_line_chart_title_html(
+                "Monthly Trend (YoY)",
+                sku_label,
+                chart_title_metric_line,
+            )
+            + "</div></div>",
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(fig_yoy, use_container_width=True, key="product_perf_yoy_chart")
+    _bar_col, _pie_col = st.columns([1.35, 1.0], gap="large")
+    with _bar_col:
+        with st.container(border=True):
+            st.markdown(
+                '<div data-chart-tile="bar" style="display:none;width:0;height:0;position:absolute;" aria-hidden="true"></div>',
+                unsafe_allow_html=True,
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+    with _pie_col:
+        with st.container(border=True):
+            st.markdown(
+                '<div data-chart-tile="pie" style="display:none;width:0;height:0;position:absolute;" aria-hidden="true"></div>',
+                unsafe_allow_html=True,
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
 
-st.markdown("<h2 class='product-section-title'>AI Analysis (Auto Summary)</h2>", unsafe_allow_html=True)
 analysis_text = ai_analysis_summary(
     df_chart_effective,
     value_col,
@@ -705,13 +880,19 @@ analysis_text = ai_analysis_summary(
     st.session_state.selected_product,
     st.session_state.selected_years or [],
 )
-st.info(analysis_text)
-st.caption(
-    "ℹ️ Net Proceeds ($) represents the final amount Amazon credits or debits after "
-    "marketplace fees, refunds, and adjustments. It does not include product cost "
-    "(COGS) or inbound shipping expenses. To estimate true profit, you must subtract "
-    "COGS and freight/shipping costs separately."
-)
+st.markdown("<h2 class='product-section-title'>AI Analysis (Auto Summary)</h2>", unsafe_allow_html=True)
+with st.container(border=True):
+    st.markdown(
+        '<div data-product-tile="ai" style="display:none;width:0;height:0;position:absolute;" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
+    st.info(analysis_text)
+    st.caption(
+        "ℹ️ Net Proceeds ($) represents the final amount Amazon credits or debits after "
+        "marketplace fees, refunds, and adjustments. It does not include product cost "
+        "(COGS) or inbound shipping expenses. To estimate true profit, you must subtract "
+        "COGS and freight/shipping costs separately."
+    )
 
 with st.expander("View filtered data (debug)"):
     st.dataframe(
