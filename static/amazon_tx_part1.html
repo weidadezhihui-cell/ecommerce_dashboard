@@ -1,0 +1,35 @@
+<div id="stickyNavSentinel" style="height:0;margin:0;padding:0;line-height:0"></div>
+
+<div id="stickyNav">
+  <div class="filters" id="filtersRow" style="display:none">
+    <label>Year<select id="fYear"><option value="all">All years</option></select></label>
+    <label>Month<select id="fMonth"><option value="all">All months</option></select></label>
+    <label>Type<select id="fType">
+      <option value="all">All types</option>
+      <option value="Order">Order</option>
+      <option value="Refund">Refund</option>
+      <option value="Service Fee">Service Fee</option>
+      <option value="FBA Inventory Fee">FBA Fee</option>
+      <option value="Adjustment">Adjustment</option>
+    </select></label>
+    <label>State<select id="fState"><option value="all">All states</option></select></label>
+    <label>SKU<select id="fSku"><option value="all">All SKUs</option></select></label>
+  </div>
+
+  <div class="tabs" id="tabBar" style="display:none">
+    <div class="tab active" onclick="switchTab(0)">Overview</div>
+    <div class="tab" onclick="switchTab(1)">Products</div>
+    <div class="tab" onclick="switchTab(2)">Financials</div>
+    <div class="tab" onclick="switchTab(3)">Geography</div>
+    <div class="tab" onclick="switchTab(4)">Raw data</div>
+  </div>
+</div>
+
+<div id="panels">
+  <div class="panel active" id="p0"><div class="empty">Load data to see your dashboard</div></div>
+  <div class="panel" id="p1"></div>
+  <div class="panel" id="p2"></div>
+  <div class="panel" id="p3"></div>
+  <div class="panel" id="p4"></div>
+</div>
+</div>
