@@ -69,9 +69,9 @@ function renderOverview(data){
   document.getElementById('trendLeg').innerHTML=`<span style="display:flex;align-items:center;gap:3px"><span class="ld" style="background:#B5D4F4"></span>Gross sales</span><span style="display:flex;align-items:center;gap:3px"><span class="ld" style="background:#1D9E75"></span>Net payout</span>`;
   destroyChart('trend');
   charts.trend=new Chart(document.getElementById('trendC'),{type:'bar',data:{labels:mDisplay,datasets:[
-    {label:'Gross sales',data:mLabels.map(m=>Math.round(byMonth[m].sales)),backgroundColor:'#B5D4F4',borderRadius:3,stack:'a'},
-    {label:'Net',data:mLabels.map(m=>Math.round(byMonth[m].net)),backgroundColor:'#1D9E75',borderRadius:3,stack:'b'}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{bodyFont:{size:DS.fsTooltip},titleFont:{size:DS.fsTooltip,weight:'600'}}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:DS.fsAxis}}},y:{ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:DS.fsAxis}}}}}});
+    {label:'Gross sales',data:mLabels.map(m=>Math.round(byMonth[m].sales)),backgroundColor:'#B5D4F4',borderRadius:3,barPercentage:0.6,categoryPercentage:0.8},
+    {label:'Net payout',data:mLabels.map(m=>Math.round(byMonth[m].net)),backgroundColor:'#1D9E75',borderRadius:3,barPercentage:0.6,categoryPercentage:0.8}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{bodyFont:{size:DS.fsTooltip},titleFont:{size:DS.fsTooltip,weight:'600'}}},scales:{x:{stacked:false,ticks:{autoSkip:true,maxRotation:45,minRotation:45,maxTicksLimit:24,font:{size:DS.fsAxis}}},y:{stacked:false,ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:DS.fsAxis}}}}}});
   document.getElementById('typeLeg').innerHTML=velLabels.map((l,i)=>`<span style="display:flex;align-items:center;gap:3px"><span class="ld" style="background:${velCols[i]}"></span>${l} (${totalSkuUnits>0?fmtp(velData[i]/totalSkuUnits*100):'—'})</span>`).join('');
   destroyChart('type');
   charts.type=new Chart(document.getElementById('typeC'),{type:'doughnut',data:{labels:velLabels,datasets:[{data:velData,backgroundColor:velCols.slice(0,velLabels.length),borderWidth:2,borderColor:'var(--color-background-primary,#fff)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw.toLocaleString()} units (${totalSkuUnits>0?fmtp(c.raw/totalSkuUnits*100):'—'})`},bodyFont:{size:DS.fsTooltip},titleFont:{size:DS.fsTooltip,weight:'600'}}},cutout:'48%'}});
