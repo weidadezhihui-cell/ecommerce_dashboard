@@ -30,6 +30,38 @@ def _build_dashboard_html() -> str:
     main_script = "<script>\n" + js + "\n</script>"
     leaflet_css = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>'
     leaflet_js  = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>'
+    resize_script = """
+<script>
+(function(){
+  function syncHeight(){
+    var h = document.documentElement.scrollHeight || document.body.scrollHeight;
+    // Try direct frameElement access (same-origin Streamlit iframe)
+    try {
+      if(window.frameElement){
+        window.frameElement.style.height = h + 'px';
+        return;
+      }
+    } catch(e){}
+    // Fallback: postMessage to parent
+    try { window.parent.postMessage({type:'streamlit:setFrameHeight', height:h}, '*'); } catch(e){}
+  }
+  // Fire on content changes
+  if(window.ResizeObserver){
+    new ResizeObserver(syncHeight).observe(document.body);
+  }
+  // Also fire on tab switch / filter change by patching updateAll
+  var _origUpdateAll = window.updateAll;
+  document.addEventListener('DOMContentLoaded', function(){
+    if(typeof updateAll === 'function'){
+      var orig = updateAll;
+      window.updateAll = function(){ orig.apply(this,arguments); setTimeout(syncHeight,300); };
+    }
+    setTimeout(syncHeight, 500);
+  });
+  window.addEventListener('load', function(){ setTimeout(syncHeight, 400); });
+})();
+</script>
+"""
     return (
         "<!DOCTYPE html><html lang=\"en\"><head>"
         '<meta charset="utf-8">'
@@ -41,6 +73,7 @@ def _build_dashboard_html() -> str:
         + leaflet_js
         + sample_block
         + main_script
+        + resize_script
         + "</body></html>"
     )
 
@@ -62,4 +95,4 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-components.html(_build_dashboard_html(), height=4800, scrolling=True)
+components.html(_build_dashboard_html(), height=800, scrolling=False)
