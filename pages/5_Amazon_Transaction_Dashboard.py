@@ -56,6 +56,9 @@ footer {visibility: hidden;}
 [data-testid="stToolbar"] {display: none;}
 [data-testid="stDecoration"] {display: none;}
 [data-testid="stStatusWidget"] {display: none;}
+.block-container {padding-top: 1rem !important; padding-bottom: 0rem !important;}
+.stApp [data-testid="stHeader"] {display: none;}
+.stAppHeader {height: 0px !important; display: none !important;}
 </style>
 """, unsafe_allow_html=True)
 
