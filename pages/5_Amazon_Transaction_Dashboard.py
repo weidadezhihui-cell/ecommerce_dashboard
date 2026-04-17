@@ -47,4 +47,16 @@ def _build_dashboard_html() -> str:
 
 st.set_page_config(page_title="Amazon Transactions", layout="wide")
 
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
+.stDeployButton {display: none;}
+[data-testid="stToolbar"] {display: none;}
+[data-testid="stDecoration"] {display: none;}
+[data-testid="stStatusWidget"] {display: none;}
+</style>
+""", unsafe_allow_html=True)
+
 components.html(_build_dashboard_html(), height=4800, scrolling=True)
