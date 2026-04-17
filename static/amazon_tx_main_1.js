@@ -1,6 +1,25 @@
 let ALL=[], charts={};
 let selYear='all', selMonth='all', selType='all', selState='all', selSku='all';
 
+const VALID_US_STATES=new Set(['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
+const STATE_FULL_TO_ABBR={'ALABAMA':'AL','ALASKA':'AK','ARIZONA':'AZ','ARKANSAS':'AR','CALIFORNIA':'CA','COLORADO':'CO','CONNECTICUT':'CT','DELAWARE':'DE','FLORIDA':'FL','GEORGIA':'GA','HAWAII':'HI','IDAHO':'ID','ILLINOIS':'IL','INDIANA':'IN','IOWA':'IA','KANSAS':'KS','KENTUCKY':'KY','LOUISIANA':'LA','MAINE':'ME','MARYLAND':'MD','MASSACHUSETTS':'MA','MICHIGAN':'MI','MINNESOTA':'MN','MISSISSIPPI':'MS','MISSOURI':'MO','MONTANA':'MT','NEBRASKA':'NE','NEVADA':'NV','NEW HAMPSHIRE':'NH','NEW JERSEY':'NJ','NEW MEXICO':'NM','NEW YORK':'NY','NORTH CAROLINA':'NC','NORTH DAKOTA':'ND','OHIO':'OH','OKLAHOMA':'OK','OREGON':'OR','PENNSYLVANIA':'PA','RHODE ISLAND':'RI','SOUTH CAROLINA':'SC','SOUTH DAKOTA':'SD','TENNESSEE':'TN','TEXAS':'TX','UTAH':'UT','VERMONT':'VT','VIRGINIA':'VA','WASHINGTON':'WA','WEST VIRGINIA':'WV','WISCONSIN':'WI','WYOMING':'WY','DISTRICT OF COLUMBIA':'DC'};
+function normalizeState(raw){const up=(raw||'').trim().toUpperCase();if(VALID_US_STATES.has(up))return up;return STATE_FULL_TO_ABBR[up]||'';}
+
+function resetUploadZone(){
+  const dz=document.getElementById('dropZone');
+  if(dz){dz.classList.remove('file-loaded');dz.classList.remove('drag-over');}
+  const fn=document.getElementById('fileName');
+  if(fn) fn.textContent='';
+  const fi=document.getElementById('fileInput');
+  if(fi) fi.value='';
+}
+
+function clearDashboardData(){
+  ALL=[];
+  selYear=selMonth=selType=selState=selSku='all';
+  Object.keys(charts).forEach(k=>destroyChart(k));
+}
+
 // ── Design System: chart font tokens (mirrors CSS --fs-* variables) ───────
 const DS = {
   fsAxis:    16,   // axis tick labels  — mirrors --fs-filter: 16px
@@ -83,7 +102,7 @@ function parseRows(text){
       accountType:   cols[ci('account type',8)]||'',
       fulfillment:   cols[ci('fulfillment',9)]||'',
       city:         (cols[ci('order city',10)]||'').trim(),
-      state:        (cols[ci('order state',11)]||'').trim().toUpperCase().slice(0,2),
+      state:        normalizeState(cols[ci('order state',11)]),
       postal:       (cols[ci('order postal',12)]||'').trim(),
       taxModel:      cols[ci('tax collection model',ci('taxcollectionmodel',13))]||'',
       productSales:         n(cols[ci('product sales',14)]),
@@ -108,17 +127,26 @@ function parseRows(text){
 }
 
 function processText(txt, label){
-  ALL=parseRows(txt);
-  if(ALL.length===0){
+  resetUploadZone();
+  clearDashboardData();
+
+  const rows=parseRows(txt);
+  if(rows.length===0){
     document.getElementById('status').textContent='Could not parse — check the file has the correct Amazon transaction headers.';
+    const fi=document.getElementById('fileInput');
+    if(fi) fi.value='';
     return;
   }
+  ALL=rows;
   if(label){
     const dz=document.getElementById('dropZone');
-    dz.classList.add('file-loaded');
-    document.getElementById('fileName').textContent='✓ '+label;
+    if(dz) dz.classList.add('file-loaded');
+    const fn=document.getElementById('fileName');
+    if(fn) fn.textContent='✓ '+label;
   }
   init();
+  const fi=document.getElementById('fileInput');
+  if(fi) fi.value='';
 }
 
 function fmtExcelDate(v){
@@ -136,12 +164,15 @@ function fmtExcelDate(v){
 
 function handleFileSelect(file){
   if(!file) return;
+  resetUploadZone();
   document.getElementById('status').textContent='Reading '+file.name+' …';
   const ext=file.name.split('.').pop().toLowerCase();
 
   if(ext==='xlsx'||ext==='xls'){
     if(typeof XLSX==='undefined'){
       document.getElementById('status').textContent='Excel library not loaded yet — please try again in a moment.';
+      const fi=document.getElementById('fileInput');
+      if(fi) fi.value='';
       return;
     }
     const reader=new FileReader();
@@ -159,6 +190,8 @@ function handleFileSelect(file){
         processText(tsv, file.name);
       }catch(err){
         document.getElementById('status').textContent='Error reading Excel file: '+err.message;
+        const fi=document.getElementById('fileInput');
+        if(fi) fi.value='';
       }
     };
     reader.readAsArrayBuffer(file);
@@ -188,16 +221,20 @@ function handleFileSelect(file){
 
 function handleDrop(event){
   event.preventDefault();
-  document.getElementById('dropZone').classList.remove('drag-over');
-  const file=event.dataTransfer.files[0];
+  const dz=document.getElementById('dropZone');
+  if(dz) dz.classList.remove('drag-over');
+  const file=event.dataTransfer&&event.dataTransfer.files&&event.dataTransfer.files[0];
   if(file) handleFileSelect(file);
 }
 
 function loadSample(){
-  const dz=document.getElementById('dropZone');
-  dz.classList.add('file-loaded');
-  document.getElementById('fileName').textContent='✓ sample_data.tsv';
-  processText(SAMPLE, null);
+  processText(SAMPLE,'sample_data.tsv');
+}
+
+function handleFileInputChange(ev){
+  const inp=ev&&ev.target;
+  const file=inp&&inp.files&&inp.files[0];
+  if(file) handleFileSelect(file);
 }
 
 function init(){

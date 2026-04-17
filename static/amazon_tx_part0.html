@@ -64,7 +64,7 @@ body{font-family:var(--font-sans,system-ui,sans-serif);font-size:var(--fs-base);
 
 /* ── KPI Cards ──────────────────────────────────────────────────────────── */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:30px}
-.kpi{background:var(--color-bg-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px 18px}
+.kpi{background:var(--color-bg-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px 18px;text-align:center}
 .kpi .label{font-size:var(--fs-kpi-label);font-weight:600;color:var(--color-text-secondary,#666);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
 .kpi .value{font-size:var(--fs-kpi-value);font-weight:600;line-height:1.1}
 .kpi .sub{font-size:var(--fs-subtext);color:var(--color-text-secondary,#666);margin-top:8px}
@@ -151,7 +151,7 @@ tr:hover td{background:var(--color-background-secondary,#f7f7f5)}
        ondragover="event.preventDefault();this.classList.add('drag-over')"
        ondragleave="this.classList.remove('drag-over')"
        ondrop="handleDrop(event)">
-    <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none" onchange="handleFileSelect(this.files[0])">
+    <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none" onchange="handleFileInputChange(event)">
     <div class="drop-icon">📂</div>
     <div class="drop-label">Click to browse or drag &amp; drop your file here</div>
     <div class="drop-hint">Supports: .csv &nbsp;·&nbsp; .tsv &nbsp;·&nbsp; .xlsx &nbsp;·&nbsp; .xls &nbsp;—&nbsp; Amazon Seller Central transaction export</div>

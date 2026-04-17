@@ -54,7 +54,7 @@ function renderGeo(data){
 
     const map=L.map('usaMap',{
       zoomControl:true,
-      scrollWheelZoom:false,
+      scrollWheelZoom:true,
       attributionControl:true
     }).fitBounds([[24,-125],[50,-66]]);
     _geoMap=map;
